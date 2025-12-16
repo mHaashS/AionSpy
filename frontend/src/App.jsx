@@ -108,11 +108,113 @@ function App() {
     return categories
   }
 
+  // Organiser les skills par catégories
+  const organizeSkillsByCategory = (skillList) => {
+    if (!skillList) return { active: [], passive: [], dp: [] }
+    
+    const categories = {
+      active: [],
+      passive: [],
+      dp: []
+    }
+    
+    skillList.forEach(skill => {
+      if (skill.category === 'Active') {
+        categories.active.push(skill)
+      } else if (skill.category === 'Passive') {
+        categories.passive.push(skill)
+      } else if (skill.category === 'Dp') {
+        categories.dp.push(skill)
+      }
+    })
+    
+    return categories
+  }
+
   // Trouver l'item level dans les stats
   const getItemLevel = (statList) => {
     if (!statList) return null
     const itemLevelStat = statList.find(stat => stat.type === 'ItemLevel')
     return itemLevelStat ? itemLevelStat.value : null
+  }
+
+  // Obtenir les couleurs selon le grade de l'item
+  const getItemGradeColors = (grade) => {
+    if (grade === 'Unique') {
+      return { borderColor: '#ffd700', nameColor: '#ffd700' } // Or
+    } else if (grade === 'Epic') {
+      return { borderColor: '#ff8c00', nameColor: '#ff8c00' } // Orange
+    } else if (grade === 'Legend') {
+      return { borderColor: '#4a90e2', nameColor: '#4a90e2' } // Bleu
+    } else if (grade === 'Rare') {
+      return { borderColor: '#9d4edd', nameColor: '#9d4edd' } // Violet
+    } else if (grade === 'Special') {
+      return { borderColor: '#06ffa5', nameColor: '#06ffa5' } // Vert menthe
+    }
+    return { borderColor: '#2d3441', nameColor: '#fff' } // Par défaut
+  }
+
+  // Obtenir les éléments à afficher pour les niveaux d'enchantement et d'exceed
+  const getEnchantDisplay = (item) => {
+    const { grade, enchantLevel, exceedLevel } = item
+    
+    // Pour Unique: si enchantLevel = 15 et exceedLevel > 0, afficher uniquement exceedLevel avec ★
+    if (grade === 'Unique' && enchantLevel === 15 && exceedLevel > 0) {
+      return (
+        <span style={{ 
+          color: '#ffd700', 
+          fontSize: '12px',
+          border: '1px solid #ffd700',
+          backgroundColor: 'rgba(255, 215, 0, 0.15)',
+          borderRadius: '4px',
+          padding: '2px 6px',
+          display: 'inline-block'
+        }}>★{exceedLevel}</span>
+      )
+    }
+    
+    // Pour Epic: si enchantLevel = 20 et exceedLevel > 0, afficher uniquement exceedLevel avec ★
+    if (grade === 'Epic' && enchantLevel === 20 && exceedLevel > 0) {
+      return (
+        <span style={{ 
+          color: '#ffd700', 
+          fontSize: '12px',
+          border: '1px solid #ffd700',
+          backgroundColor: 'rgba(255, 215, 0, 0.15)',
+          borderRadius: '4px',
+          padding: '2px 6px',
+          display: 'inline-block'
+        }}>★{exceedLevel}</span>
+      )
+    }
+    
+    // Sinon, afficher normalement
+    return (
+      <>
+        {enchantLevel > 0 && (
+          <span style={{ 
+            color: '#4ade80', 
+            fontSize: '12px',
+            border: '1px solid #4ade80',
+            backgroundColor: 'rgba(74, 222, 128, 0.15)',
+            borderRadius: '4px',
+            padding: '2px 6px',
+            display: 'inline-block'
+          }}>+{enchantLevel}</span>
+        )}
+        {exceedLevel > 0 && (
+          <span style={{ 
+            color: '#ffd700', 
+            fontSize: '12px',
+            border: '1px solid #ffd700',
+            backgroundColor: 'rgba(255, 215, 0, 0.15)',
+            borderRadius: '4px',
+            padding: '2px 6px',
+            display: 'inline-block'
+          }}>x{exceedLevel}</span>
+        )}
+      </>
+    )
   }
 
   return (
@@ -257,13 +359,17 @@ function App() {
       style={{
         backgroundColor: '#1a1f2e',
         borderRadius: '8px',
-        maxWidth: '1200px',
+        maxWidth: '1500px',
         width: '100%',
         maxHeight: '95vh',
         overflow: 'auto',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
         position: 'relative',
-        color: '#e0e0e0'
+        color: '#e0e0e0',
+        border: '1px solid rgba(105, 152, 181, 1)',
+        borderStyle: 'solid',
+        borderWidth: '1px',
+        borderColor: 'rgba(105, 152, 181, 1)'
       }}
     >
       {detailsLoading ? (
@@ -272,44 +378,40 @@ function App() {
         </div>
       ) : characterDetails && characterEquipment ? (
         <>
-          {/* Header avec bouton fermer */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            padding: '15px 20px',
-            position: 'sticky',
-            top: 0,
-            backgroundColor: '#1a1f2e',
-            zIndex: 10,
-            borderBottom: '1px solid #2d3441'
-          }}>
-            <button
-              onClick={closeModal}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '28px',
-                cursor: 'pointer',
-                color: '#e0e0e0',
-                padding: '0 10px',
-                lineHeight: '1',
-                borderRadius: '4px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#2d3441'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              ×
-            </button>
-          </div>
-
           {/* Character Header */}
           {characterDetails.profile && (
             <div style={{
               padding: '30px',
-              background: 'linear-gradient(135deg, #1a1f2e 0%, #252b3d 100%)',
-              borderBottom: '2px solid #2d3441'
+              margin: '30px 30px 30px',
+              background: 'linear-gradient(135deg, #1e2330 0%, #252b3d 100%)',
+              border: '1px solid #2d3441',
+              borderRadius: '12px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+              position: 'relative'
             }}>
+              {/* Bouton fermer dans le profil */}
+              <button
+                onClick={closeModal}
+                style={{
+                  position: 'absolute',
+                  top: '15px',
+                  right: '15px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  color: '#e0e0e0',
+                  padding: '0 10px',
+                  lineHeight: '1',
+                  borderRadius: '4px',
+                  transition: 'background-color 0.2s',
+                  zIndex: 10
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#2d3441'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                ×
+              </button>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                 {/* Character Image */}
                 <div style={{ position: 'relative' }}>
@@ -368,12 +470,13 @@ function App() {
                       display: 'inline-block',
                       backgroundColor: '#2d3441',
                       padding: '6px 12px',
-                      borderRadius: '4px',
-                      color: '#4a90e2',
+                      borderRadius: '7px',
+                      border: '1px solid rgb(139, 179, 228)',
+                      color: 'rgb(139, 179, 228)',
                       fontWeight: 'bold',
                       fontSize: '14px'
                     }}>
-                      Item Level {getItemLevel(characterDetails.stat?.statList)}
+                       Combat Power {getItemLevel(characterDetails.stat?.statList)}
                     </div>
                   )}
                 </div>
@@ -387,7 +490,9 @@ function App() {
                         padding: '15px',
                         borderRadius: '8px',
                         textAlign: 'center',
-                        minWidth: '100px'
+                        minWidth: '100px',
+                        border: '1px solid #2d3441',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
                       }}>
                         <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '5px' }}>PET</div>
                         <img 
@@ -406,7 +511,9 @@ function App() {
                         padding: '15px',
                         borderRadius: '8px',
                         textAlign: 'center',
-                        minWidth: '100px'
+                        minWidth: '100px',
+                        border: '1px solid #2d3441',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
                       }}>
                         <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '5px' }}>WINGS</div>
                         <img 
@@ -428,31 +535,43 @@ function App() {
           {/* Tabs */}
           <div style={{
             display: 'flex',
-            borderBottom: '2px solid #2d3441',
+            gap: '10px',
             backgroundColor: '#252b3d',
-            paddingLeft: '30px'
+            padding: '15px 30px',
+            borderBottom: 'none',
+            border: 'none'
           }}>
-            {['EQUIPMENT', 'STATS', 'RANKS', 'DAEVANION', 'TITLES'].map(tab => (
+            {['EQUIPMENT', 'STATS', 'SKILLS', 'RANKS', 'DAEVANION', 'TITLES', 'COSMETICS'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 style={{
                   padding: '15px 25px',
-                  background: 'none',
-                  border: 'none',
+                  backgroundColor: activeTab === tab ? '#1e2330' : '#252b3d',
+                  border: activeTab === tab ? '1px solid #4a90e2' : '1px solid #2d3441',
+                  borderRadius: '8px',
                   color: activeTab === tab ? '#4a90e2' : '#9ca3af',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: activeTab === tab ? 'bold' : 'normal',
-                  borderBottom: activeTab === tab ? '2px solid #4a90e2' : '2px solid transparent',
-                  marginBottom: '-2px',
-                  transition: 'color 0.2s'
+                  transition: 'all 0.2s',
+                  boxShadow: activeTab === tab 
+                    ? '0 4px 12px rgba(74, 144, 226, 0.3)' 
+                    : '0 2px 8px rgba(0, 0, 0, 0.3)'
                 }}
                 onMouseEnter={(e) => {
-                  if (activeTab !== tab) e.target.style.color = '#e0e0e0'
+                  if (activeTab !== tab) {
+                    e.target.style.color = '#e0e0e0'
+                    e.target.style.backgroundColor = '#1e2330'
+                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)'
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  if (activeTab !== tab) e.target.style.color = '#9ca3af'
+                  if (activeTab !== tab) {
+                    e.target.style.color = '#9ca3af'
+                    e.target.style.backgroundColor = '#252b3d'
+                    e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)'
+                  }
                 }}
               >
                 {tab}
@@ -470,20 +589,30 @@ function App() {
                     <>
                       {/* Weapons */}
                       {categories.weapons.length > 0 && (
-                        <div style={{ marginBottom: '30px' }}>
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
                           <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>Weapons</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                            {categories.weapons.map((item, idx) => (
+                            {categories.weapons.map((item, idx) => {
+                              const gradeColors = getItemGradeColors(item.grade)
+                              return (
                               <div 
                                 key={idx}
                                 style={{
                                   backgroundColor: '#252b3d',
                                   padding: '15px',
                                   borderRadius: '8px',
-                                  border: '1px solid #2d3441',
+                                  border: `1px solid ${gradeColors.borderColor}`,
                                   display: 'flex',
                                   gap: '12px',
-                                  alignItems: 'center'
+                                  alignItems: 'center',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                                 }}
                               >
                                 <img 
@@ -492,47 +621,47 @@ function App() {
                                   style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                                 />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                  <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                                     {item.name}
                                   </div>
                                   <div style={{ color: '#9ca3af', fontSize: '12px' }}>{item.slotPosName}</div>
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    {item.enchantLevel > 0 && (
-                                      <span style={{ color: '#4a90e2', fontSize: '12px' }}>+{item.enchantLevel}</span>
-                                    )}
-                                    {item.exceedLevel > 0 && (
-                                      <span style={{ color: '#ffd700', fontSize: '12px' }}>x{item.exceedLevel}</span>
-                                    )}
-                                    <span style={{ 
-                                      color: item.grade === 'Unique' ? '#ffd700' : item.grade === 'Epic' ? '#a855f7' : '#9ca3af',
-                                      fontSize: '12px'
-                                    }}>
-                                      {item.grade}
-                                    </span>
+                                    {getEnchantDisplay(item)}
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}
 
                       {/* Armor */}
                       {categories.armor.length > 0 && (
-                        <div style={{ marginBottom: '30px' }}>
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
                           <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>Armor</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                            {categories.armor.map((item, idx) => (
+                            {categories.armor.map((item, idx) => {
+                              const gradeColors = getItemGradeColors(item.grade)
+                              return (
                               <div 
                                 key={idx}
                                 style={{
                                   backgroundColor: '#252b3d',
                                   padding: '15px',
                                   borderRadius: '8px',
-                                  border: '1px solid #2d3441',
+                                  border: `1px solid ${gradeColors.borderColor}`,
                                   display: 'flex',
                                   gap: '12px',
-                                  alignItems: 'center'
+                                  alignItems: 'center',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                                 }}
                               >
                                 <img 
@@ -541,47 +670,47 @@ function App() {
                                   style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                                 />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                  <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                                     {item.name}
                                   </div>
                                   <div style={{ color: '#9ca3af', fontSize: '12px' }}>{item.slotPosName}</div>
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    {item.enchantLevel > 0 && (
-                                      <span style={{ color: '#4a90e2', fontSize: '12px' }}>+{item.enchantLevel}</span>
-                                    )}
-                                    {item.exceedLevel > 0 && (
-                                      <span style={{ color: '#ffd700', fontSize: '12px' }}>x{item.exceedLevel}</span>
-                                    )}
-                                    <span style={{ 
-                                      color: item.grade === 'Unique' ? '#ffd700' : item.grade === 'Epic' ? '#a855f7' : '#9ca3af',
-                                      fontSize: '12px'
-                                    }}>
-                                      {item.grade}
-                                    </span>
+                                    {getEnchantDisplay(item)}
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}
 
                       {/* Accessories */}
                       {categories.accessories.length > 0 && (
-                        <div style={{ marginBottom: '30px' }}>
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
                           <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>Accessories</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                            {categories.accessories.map((item, idx) => (
+                            {categories.accessories.map((item, idx) => {
+                              const gradeColors = getItemGradeColors(item.grade)
+                              return (
                               <div 
                                 key={idx}
                                 style={{
                                   backgroundColor: '#252b3d',
                                   padding: '15px',
                                   borderRadius: '8px',
-                                  border: '1px solid #2d3441',
+                                  border: `1px solid ${gradeColors.borderColor}`,
                                   display: 'flex',
                                   gap: '12px',
-                                  alignItems: 'center'
+                                  alignItems: 'center',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                                 }}
                               >
                                 <img 
@@ -590,47 +719,47 @@ function App() {
                                   style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                                 />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                  <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                                     {item.name}
                                   </div>
                                   <div style={{ color: '#9ca3af', fontSize: '12px' }}>{item.slotPosName}</div>
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    {item.enchantLevel > 0 && (
-                                      <span style={{ color: '#4a90e2', fontSize: '12px' }}>+{item.enchantLevel}</span>
-                                    )}
-                                    {item.exceedLevel > 0 && (
-                                      <span style={{ color: '#ffd700', fontSize: '12px' }}>x{item.exceedLevel}</span>
-                                    )}
-                                    <span style={{ 
-                                      color: item.grade === 'Unique' ? '#ffd700' : item.grade === 'Epic' ? '#a855f7' : item.grade === 'Legend' ? '#ff6b6b' : '#9ca3af',
-                                      fontSize: '12px'
-                                    }}>
-                                      {item.grade}
-                                    </span>
+                                    {getEnchantDisplay(item)}
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}
 
                       {/* Runes */}
                       {categories.runes.length > 0 && (
-                        <div style={{ marginBottom: '30px' }}>
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
                           <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>Runes</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                            {categories.runes.map((item, idx) => (
+                            {categories.runes.map((item, idx) => {
+                              const gradeColors = getItemGradeColors(item.grade)
+                              return (
                               <div 
                                 key={idx}
                                 style={{
                                   backgroundColor: '#252b3d',
                                   padding: '15px',
                                   borderRadius: '8px',
-                                  border: '1px solid #2d3441',
+                                  border: `1px solid ${gradeColors.borderColor}`,
                                   display: 'flex',
                                   gap: '12px',
-                                  alignItems: 'center'
+                                  alignItems: 'center',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                                 }}
                               >
                                 <img 
@@ -639,47 +768,47 @@ function App() {
                                   style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                                 />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                  <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                                     {item.name}
                                   </div>
                                   <div style={{ color: '#9ca3af', fontSize: '12px' }}>{item.slotPosName}</div>
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    {item.enchantLevel > 0 && (
-                                      <span style={{ color: '#4a90e2', fontSize: '12px' }}>+{item.enchantLevel}</span>
-                                    )}
-                                    {item.exceedLevel > 0 && (
-                                      <span style={{ color: '#ffd700', fontSize: '12px' }}>x{item.exceedLevel}</span>
-                                    )}
-                                    <span style={{ 
-                                      color: item.grade === 'Unique' ? '#ffd700' : item.grade === 'Epic' ? '#a855f7' : item.grade === 'Legend' ? '#ff6b6b' : item.grade === 'Special' ? '#ff6b6b' : '#9ca3af',
-                                      fontSize: '12px'
-                                    }}>
-                                      {item.grade}
-                                    </span>
+                                    {getEnchantDisplay(item)}
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}
 
                       {/* Arcana */}
                       {categories.arcana.length > 0 && (
-                        <div>
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
                           <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>Arcana</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                            {categories.arcana.map((item, idx) => (
+                            {categories.arcana.map((item, idx) => {
+                              const gradeColors = getItemGradeColors(item.grade)
+                              return (
                               <div 
                                 key={idx}
                                 style={{
                                   backgroundColor: '#252b3d',
                                   padding: '15px',
                                   borderRadius: '8px',
-                                  border: '1px solid #2d3441',
+                                  border: `1px solid ${gradeColors.borderColor}`,
                                   display: 'flex',
                                   gap: '12px',
-                                  alignItems: 'center'
+                                  alignItems: 'center',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                                 }}
                               >
                                 <img 
@@ -688,27 +817,17 @@ function App() {
                                   style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                                 />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                  <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                                     {item.name}
                                   </div>
                                   <div style={{ color: '#9ca3af', fontSize: '12px' }}>{item.slotPosName}</div>
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    {item.enchantLevel > 0 && (
-                                      <span style={{ color: '#4a90e2', fontSize: '12px' }}>+{item.enchantLevel}</span>
-                                    )}
-                                    {item.exceedLevel > 0 && (
-                                      <span style={{ color: '#ffd700', fontSize: '12px' }}>x{item.exceedLevel}</span>
-                                    )}
-                                    <span style={{ 
-                                      color: item.grade === 'Unique' ? '#ffd700' : item.grade === 'Epic' ? '#a855f7' : item.grade === 'Legend' ? '#ff6b6b' : '#9ca3af',
-                                      fontSize: '12px'
-                                    }}>
-                                      {item.grade}
-                                    </span>
+                                    {getEnchantDisplay(item)}
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       )}
@@ -880,6 +999,316 @@ function App() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'SKILLS' && characterEquipment.skill && (
+              <div>
+                {(() => {
+                  const skillCategories = organizeSkillsByCategory(characterEquipment.skill.skillList)
+                  const activeSkills = skillCategories.active.filter(skill => skill.acquired === 1)
+                  const passiveSkills = skillCategories.passive.filter(skill => skill.acquired === 1)
+                  const dpSkills = skillCategories.dp.filter(skill => skill.acquired === 1)
+                  const equippedDpCount = dpSkills.filter(skill => skill.equip === 1).length
+
+                  return (
+                    <>
+                      {/* Active Skills */}
+                      {activeSkills.length > 0 && (
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
+                          <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>
+                            Active Skills ({activeSkills.length})
+                          </h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
+                            {activeSkills.map((skill, idx) => (
+                              <div 
+                                key={idx}
+                                style={{
+                                  backgroundColor: '#252b3d',
+                                  padding: '10px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #2d3441',
+                                  textAlign: 'center',
+                                  position: 'relative',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                                }}
+                              >
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <img 
+                                    src={skill.icon} 
+                                    alt={skill.name}
+                                    style={{ width: '64px', height: '64px', objectFit: 'contain', borderRadius: '4px' }}
+                                  />
+                                  {skill.skillLevel > 0 && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '-8px',
+                                      right: '-8px',
+                                      backgroundColor: '#4a90e2',
+                                      color: '#fff',
+                                      borderRadius: '50%',
+                                      width: '24px',
+                                      height: '24px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '11px',
+                                      fontWeight: 'bold',
+                                      border: '2px solid #1e2330'
+                                    }}>
+                                      {skill.skillLevel}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ color: '#e0e0e0', fontSize: '12px', marginTop: '8px', fontWeight: '500' }}>
+                                  {skill.name}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Passive Skills */}
+                      {passiveSkills.length > 0 && (
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
+                          <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>
+                            Passive Skills ({passiveSkills.length})
+                          </h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
+                            {passiveSkills.map((skill, idx) => (
+                              <div 
+                                key={idx}
+                                style={{
+                                  backgroundColor: '#252b3d',
+                                  padding: '10px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #2d3441',
+                                  textAlign: 'center',
+                                  position: 'relative',
+                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                                }}
+                              >
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <img 
+                                    src={skill.icon} 
+                                    alt={skill.name}
+                                    style={{ width: '64px', height: '64px', objectFit: 'contain', borderRadius: '4px' }}
+                                  />
+                                  {skill.skillLevel > 0 && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '-8px',
+                                      right: '-8px',
+                                      backgroundColor: '#4a90e2',
+                                      color: '#fff',
+                                      borderRadius: '50%',
+                                      width: '24px',
+                                      height: '24px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '11px',
+                                      fontWeight: 'bold',
+                                      border: '2px solid #1e2330'
+                                    }}>
+                                      {skill.skillLevel}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ color: '#e0e0e0', fontSize: '12px', marginTop: '8px', fontWeight: '500' }}>
+                                  {skill.name}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* DP Skills (Sigma Skills) */}
+                      {dpSkills.length > 0 && (
+                        <div style={{ 
+                          marginBottom: '30px',
+                          backgroundColor: '#1e2330',
+                          border: '1px solid #2d3441',
+                          borderRadius: '12px',
+                          padding: '20px',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}>
+                          <h3 style={{ color: '#4a90e2', marginBottom: '15px', fontSize: '18px' }}>
+                            Sigma Skills ({dpSkills.length}) {equippedDpCount > 0 && `${equippedDpCount} equipped`}
+                          </h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '15px' }}>
+                            {dpSkills.map((skill, idx) => (
+                              <div 
+                                key={idx}
+                                style={{
+                                  backgroundColor: '#252b3d',
+                                  padding: '10px',
+                                  borderRadius: '8px',
+                                  border: skill.equip === 1 ? '1px solid #4a90e2' : '1px solid #2d3441',
+                                  textAlign: 'center',
+                                  position: 'relative',
+                                  boxShadow: skill.equip === 1 ? '0 2px 8px rgba(74, 144, 226, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.3)'
+                                }}
+                              >
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <img 
+                                    src={skill.icon} 
+                                    alt={skill.name}
+                                    style={{ 
+                                      width: '64px', 
+                                      height: '64px', 
+                                      objectFit: 'contain', 
+                                      borderRadius: '4px',
+                                      opacity: skill.skillLevel === 0 ? 0.5 : 1
+                                    }}
+                                  />
+                                  {skill.equip === 1 && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '-5px',
+                                      left: '-18px',
+                                      color: 'rgb(88, 214, 105)',
+                                      width: '20px',
+                                      height: '20px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '11px',
+                                      fontWeight: 'bold',
+                                    }}>
+                                      E
+                                    </div>
+                                  )}
+                                  {skill.skillLevel > 0 && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '-8px',
+                                      right: '-8px',
+                                      backgroundColor: '#4a90e2',
+                                      color: '#fff',
+                                      borderRadius: '50%',
+                                      width: '24px',
+                                      height: '24px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '11px',
+                                      fontWeight: 'bold',
+                                      border: '2px solid #1e2330'
+                                    }}>
+                                      {skill.skillLevel}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ color: '#e0e0e0', fontSize: '12px', marginTop: '8px', fontWeight: '500' }}>
+                                  {skill.name}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+            )}
+
+            {activeTab === 'COSMETICS' && characterEquipment && characterEquipment.equipment && (
+              <div>
+                {(() => {
+                  const skinList = characterEquipment.equipment.skinList || []
+                  return skinList.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                    {skinList.map((cosmetic, idx) => {
+                      const gradeColors = getItemGradeColors(cosmetic.grade)
+                      return (
+                        <div 
+                          key={idx}
+                          style={{
+                            backgroundColor: '#252b3d',
+                            padding: '20px',
+                            borderRadius: '12px',
+                            border: `1px solid ${gradeColors.borderColor}`,
+                            textAlign: 'center',
+                            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                            transition: 'transform 0.2s, box-shadow 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.4)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.3)'
+                          }}
+                        >
+                          <img 
+                            src={cosmetic.icon} 
+                            alt={cosmetic.name}
+                            style={{ 
+                              width: '80px', 
+                              height: '80px', 
+                              objectFit: 'contain', 
+                              borderRadius: '8px',
+                              marginBottom: '15px',
+                              backgroundColor: '#1e2330',
+                              padding: '8px'
+                            }}
+                          />
+                          <div style={{ 
+                            color: gradeColors.nameColor, 
+                            fontWeight: 'bold', 
+                            fontSize: '14px', 
+                            marginBottom: '8px',
+                            minHeight: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {cosmetic.name}
+                          </div>
+                          <div style={{ 
+                            color: '#9ca3af', 
+                            fontSize: '12px',
+                            backgroundColor: '#2d3441',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            display: 'inline-block'
+                          }}>
+                            {cosmetic.slotPosName}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '60px', 
+                    color: '#9ca3af',
+                    fontSize: '16px'
+                  }}>
+                    {characterEquipment.equipment?.skinList ? 'Aucun cosmétique équipé' : 'Données de cosmétiques non disponibles'}
+                  </div>
+                )
+                })()}
               </div>
             )}
           </div>
