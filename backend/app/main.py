@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import requests
+import httpx
 
 app = FastAPI()
 app.add_middleware(
@@ -19,52 +19,55 @@ TW_BASE_URL = "https://tw.ncsoft.com/aion2"
 KR_BASE_URL = "https://kr.ncsoft.com/aion2"
 
 @app.get("/api/search/{character_name}")
-def search_character_tw(character_name: str):
+async def search_character_tw(character_name: str):
     headers = {"User-Agent": "Mozilla/5.0"}
-    url = f"{TW_BASE_URL}/api/search/aion2tw/search/v2/character?keyword={character_name}&lang=en"
+    url = f"{TW_BASE_URL}/api/search/aion2tw/search/v2/character?keyword={character_name}"
     print(url)
     try:
-        response = requests.get(url, timeout=10, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
         return {"error": "Request timed out"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         return {"error": str(e)}
 
 
 @app.get("/api/character_info")
-def get_character_info(character_id: str, server_id: int):
+async def get_character_info(character_id: str, server_id: int):
     headers = {"User-Agent": "Mozilla/5.0"}
     url = f"{TW_BASE_URL}/api/character/info?lang=en&characterId={character_id}&serverId={server_id}"
     print(url)
     try:
-        response = requests.get(url, timeout=10, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
         return {"error": "Request timed out"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         return {"error": str(e)}
 
 
 @app.get("/api/character_equipment")
-def get_character_equipment(character_id: str, server_id: int):
+async def get_character_equipment(character_id: str, server_id: int):
     headers = {"User-Agent": "Mozilla/5.0"}
     url = f"{TW_BASE_URL}/api/character/equipment?lang=en&characterId={character_id}&serverId={server_id}"
     print(url)
     try:
-        response = requests.get(url, timeout=10, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
         return {"error": "Request timed out"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         return {"error": str(e)}
 
 
 @app.get("/api/equipment_item")
-def get_equipment_item(
+async def get_equipment_item(
     id: int,
     enchantLevel: int,
     characterId: str,
@@ -83,25 +86,27 @@ def get_equipment_item(
     )
     print(url)
     try:
-        response = requests.get(url, timeout=10, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
         return {"error": "Request timed out"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         return {"error": str(e)}
 
 
 @app.get("/api/item_info")
-def get_item_info(item_id: str, enchant_level: int, character_id: str, server_id: int, slot_pos):
+async def get_item_info(item_id: str, enchant_level: int, character_id: str, server_id: int, slot_pos):
     headers = {"User-Agent": "Mozilla/5.0"}
     url = f"{TW_BASE_URL}/api/character/equipment/item?id={item_id}&enchantLevel={enchant_level}&characterId={character_id}&serverId={server_id}&slotPos={slot_pos}&lang=en"
     print(url)
     try:
-        response = requests.get(url, timeout=10, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
         return {"error": "Request timed out"}
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         return {"error": str(e)}

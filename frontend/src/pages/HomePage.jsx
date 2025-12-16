@@ -16,6 +16,8 @@ function HomePage() {
   const [hoveredItemPosition, setHoveredItemPosition] = useState({ x: 0, y: 0 })
   const [equipmentItemsDetails, setEquipmentItemsDetails] = useState({})
   const [equipmentItemsLoading, setEquipmentItemsLoading] = useState(false)
+  const [showAllResults, setShowAllResults] = useState(false)
+  const [isIconRotating, setIsIconRotating] = useState(false)
 
   const searchCharacter = async () => {
     if (!characterName.trim()) return
@@ -23,9 +25,18 @@ function HomePage() {
     setLoading(true)
     setError(null)
     setCharacterData(null)
+    setShowAllResults(false) // Réinitialiser l'état de pagination
     
     try {
       const response = await axios.get(`http://localhost:8000/api/search/${characterName}`)
+      // Trier les résultats par niveau décroissant
+      if (response.data && response.data.list) {
+        response.data.list.sort((a, b) => {
+          const levelA = parseInt(a.level) || 0
+          const levelB = parseInt(b.level) || 0
+          return levelB - levelA // Décroissant
+        })
+      }
       setCharacterData(response.data)
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur lors de la recherche')
@@ -41,13 +52,41 @@ function HomePage() {
     }
   }
 
+  const clearSearch = () => {
+    if (characterName) {
+      // Transition de croix vers loupe
+      setIsIconRotating(true)
+      setTimeout(() => {
+        setCharacterName('')
+        setCharacterData(null)
+        setError(null)
+        setShowAllResults(false)
+        setTimeout(() => setIsIconRotating(false), 300)
+      }, 150)
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value
+    if (!characterName && newValue) {
+      // Transition de loupe vers croix
+      setIsIconRotating(true)
+      setTimeout(() => setIsIconRotating(false), 300)
+    } else if (characterName && !newValue) {
+      // Transition de croix vers loupe (si l'utilisateur efface manuellement)
+      setIsIconRotating(true)
+      setTimeout(() => setIsIconRotating(false), 300)
+    }
+    setCharacterName(newValue)
+  }
+
   const getCharacterDetails = async (characterId, serverId) => {
     setDetailsLoading(true)
     setSelectedCharacter(characterId)
     setCharacterDetails(null)
     setCharacterEquipment(null)
     setError(null)
-    setIsModalOpen(true)
+    setIsModalOpen(false)
     setEquipmentItemsDetails({})
     
     try {
@@ -69,7 +108,11 @@ function HomePage() {
       setCharacterDetails(infoResponse.data)
       setCharacterEquipment(equipmentResponse.data)
       
-      // Charger tous les détails d'équipement
+      // Ouvrir la modale dès que les deux premières requêtes sont terminées
+      setIsModalOpen(true)
+      setDetailsLoading(false)
+      
+      // Charger tous les détails d'équipement en arrière-plan
       if (equipmentResponse.data?.equipment?.equipmentList) {
         setEquipmentItemsLoading(true)
         const equipmentList = equipmentResponse.data.equipment.equipmentList
@@ -99,7 +142,6 @@ function HomePage() {
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur lors du chargement des détails')
-    } finally {
       setDetailsLoading(false)
     }
   }
@@ -303,7 +345,58 @@ function HomePage() {
   }
 
   const renderEquipmentTooltip = () => {
-    if (!hoveredItemId || !equipmentItemsDetails[hoveredItemId]) return null
+    if (!hoveredItemId) return null
+    
+    // Si les détails ne sont pas encore chargés, afficher un message de chargement
+    if (!equipmentItemsDetails[hoveredItemId]) {
+      // Trouver l'item de base dans characterEquipment pour afficher au moins le nom
+      const baseItem = characterEquipment?.equipment?.equipmentList?.find(item => item.id === hoveredItemId)
+      const gradeColors = baseItem ? getItemGradeColors(baseItem.grade) : { borderColor: '#2d3441', nameColor: '#e0e0e0' }
+      
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${hoveredItemPosition.x}px`,
+            top: `${hoveredItemPosition.y}px`,
+            backgroundColor: '#1a1f2e',
+            borderRadius: '8px',
+            border: `1px solid ${gradeColors.borderColor}`,
+            padding: '15px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+            zIndex: 10000,
+            width: '420px',
+            maxWidth: '420px',
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px' }}>
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              border: '3px solid #ff8c00',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            <div style={{ color: '#9ca3af', fontSize: '14px', textAlign: 'center' }}>
+              Chargement des détails...
+            </div>
+            {baseItem && (
+              <div style={{ color: gradeColors.nameColor, fontWeight: 'bold', fontSize: '16px', textAlign: 'center' }}>
+                {baseItem.name}
+              </div>
+            )}
+          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )
+    }
     
     const itemDetails = equipmentItemsDetails[hoveredItemId]
     const gradeColors = getItemGradeColors(itemDetails.grade)
@@ -439,9 +532,14 @@ function HomePage() {
 
   return (
     <div style={{
-      height: '100%',
-      overflow: 'auto',
-      background: 'linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%)',
+      height: '100vh',
+      overflow: 'hidden',
+      background: `
+        linear-gradient(135deg, rgb(25, 21, 15) 0%, #1a1f2e 50%),
+        linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
+      `,
+      backgroundSize: '100% 100%, 50px 50px, 50px 50px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -470,7 +568,7 @@ function HomePage() {
           margin: 0,
           fontWeight: '300'
         }}>
-          Votre compagnon Aion 2
+          Your Aion 2 companion
         </p>
       </div>
 
@@ -486,20 +584,49 @@ function HomePage() {
           backgroundColor: '#1a1f2e',
           border: '2px solid #ff8c00',
           borderRadius: '12px',
-          padding: '15px 20px',
+          padding: '10px 15px',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
         }}>
-          <span style={{
-            fontSize: '20px',
-            marginRight: '15px',
-            color: '#ff8c00'
-          }}>🔍</span>
+          <span 
+            onClick={characterName ? clearSearch : undefined}
+            style={{
+              fontSize: '25px',
+              marginRight: '15px',
+              color: '#ff8c00',
+              cursor: characterName ? 'pointer' : 'default',
+              transition: isIconRotating ? 'none' : 'transform 0.2s, color 0.2s',
+              animation: isIconRotating ? 'rotateIcon 0.3s ease-in-out' : 'none',
+              userSelect: 'none',
+              display: 'inline-block'
+            }}
+            onMouseEnter={(e) => {
+              if (characterName && !isIconRotating) {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.color = '#ff9d1a'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (characterName && !isIconRotating) {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.color = '#ff8c00'
+              }
+            }}
+          >
+            {characterName ? '✕' : '🔍'}
+          </span>
+          <style>{`
+            @keyframes rotateIcon {
+              0% { transform: rotate(0deg); opacity: 1; }
+              50% { transform: rotate(90deg); opacity: 0; }
+              100% { transform: rotate(180deg); opacity: 1; }
+            }
+          `}</style>
           <input
             type="text"
             value={characterName}
-            onChange={(e) => setCharacterName(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Rechercher un personnage..."
+            placeholder="Search a character name..."
             style={{
               flex: 1,
               backgroundColor: 'transparent',
@@ -531,7 +658,7 @@ function HomePage() {
               if (!loading) e.target.style.backgroundColor = '#ff8c00'
             }}
           >
-            {loading ? 'Recherche...' : 'Rechercher'}
+            {loading ? 'Search...' : 'Search'}
           </button>
         </div>
       </div>
@@ -563,8 +690,78 @@ function HomePage() {
           width: '100%',
           boxShadow: '0 6px 18px rgba(0, 0, 0, 0.35)'
         }}>
+          <div style={{ 
+            padding: '10px 0', 
+            marginBottom: '10px',
+            borderBottom: '1px solid #2d3441',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ color: '#9ca3af', fontSize: '14px' }}>
+              {characterData.list.length > 4 && !showAllResults 
+                ? `Showing 4 of ${characterData.list.length} results`
+                : `Results (${characterData.list.length})`}
+            </span>
+            {characterData.list.length > 4 && !showAllResults && (
+              <button
+                onClick={() => setShowAllResults(true)}
+                style={{
+                  padding: '6px 16px',
+                  backgroundColor: '#ff8c00',
+                  color: '#1a1f2e',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ff9d1a'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ff8c00'
+                }}
+              >
+                Show all results
+              </button>
+            )}
+            {characterData.list.length > 4 && showAllResults && (
+              <button
+                onClick={() => setShowAllResults(false)}
+                style={{
+                  padding: '6px 16px',
+                  backgroundColor: '#2d3441',
+                  color: '#e0e0e0',
+                  border: '1px solid #3a4252',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#3a4252'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2d3441'
+                }}
+              >
+                Show less
+              </button>
+            )}
+          </div>
           
-          {characterData.list.map((character, index) => {
+          <div style={{
+            maxHeight: showAllResults ? '440px' : '400px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            paddingRight: '5px',
+            paddingBottom: '10px',
+            transition: 'max-height 0.4s ease-in-out'
+          }}>
+            {(showAllResults ? characterData.list : characterData.list.slice(0, 4)).map((character, index) => {
             const cleanName = character.name.replace(/<[^>]*>/g, '')
             const isSelected = selectedCharacter === character.characterId
             
@@ -641,6 +838,7 @@ function HomePage() {
               </button>
             )
           })}
+          </div>
         </div>
       )}
 

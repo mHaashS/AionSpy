@@ -8,8 +8,8 @@ function Navigation() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '20px 40px',
-      backgroundColor: '#1a1f2e',
+      padding: '12px 40px',
+      backgroundColor: 'rgb(19, 22, 31)',
       borderBottom: '1px solid #2d3441',
       position: 'sticky',
       top: 0,
@@ -19,16 +19,19 @@ function Navigation() {
         <Link
           to="/"
           style={{
-            padding: '10px 20px',
+            padding: '14px 28px',
             borderRadius: '8px',
             backgroundColor: location.pathname === '/' ? '#252b3d' : 'transparent',
-            border: location.pathname === '/' ? '1px solid #ff8c00' : '1px solid transparent',
+            border: location.pathname === '/' ? '1px solid #ff8c00' : '1px solid #2d3441',
             color: location.pathname === '/' ? '#ff8c00' : '#9ca3af',
             textDecoration: 'none',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: location.pathname === '/' ? 'bold' : 'normal',
             transition: 'all 0.2s',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            boxShadow: location.pathname === '/' 
+              ? '0 4px 12px rgba(255, 140, 0, 0.3)' 
+              : '0 2px 8px rgba(0, 0, 0, 0.3)'
           }}
           onMouseEnter={(e) => {
             if (location.pathname !== '/') {
@@ -48,16 +51,19 @@ function Navigation() {
         <Link
           to="/leaderboard"
           style={{
-            padding: '10px 20px',
+            padding: '14px 28px',
             borderRadius: '8px',
             backgroundColor: location.pathname === '/leaderboard' ? '#252b3d' : 'transparent',
-            border: location.pathname === '/leaderboard' ? '1px solid #ff8c00' : '1px solid transparent',
+            border: location.pathname === '/leaderboard' ? '1px solid #ff8c00' : '1px solid #2d3441',
             color: location.pathname === '/leaderboard' ? '#ff8c00' : '#9ca3af',
             textDecoration: 'none',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: location.pathname === '/leaderboard' ? 'bold' : 'normal',
             transition: 'all 0.2s',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            boxShadow: location.pathname === '/leaderboard' 
+              ? '0 4px 12px rgba(255, 140, 0, 0.3)' 
+              : '0 2px 8px rgba(0, 0, 0, 0.3)'
           }}
           onMouseEnter={(e) => {
             if (location.pathname !== '/leaderboard') {

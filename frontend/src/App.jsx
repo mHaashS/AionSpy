@@ -9,7 +9,12 @@ function App() {
       <div style={{ 
         height: '100vh',
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%)',
+        background: `
+          linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%),
+          linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
+        `,
+        backgroundSize: '100% 100%, 50px 50px, 50px 50px',
         display: 'flex',
         flexDirection: 'column'
       }}>
@@ -20,7 +25,7 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
           </Routes>
         </div>
-      </div>
+              </div>
     </Router>
   )
 }

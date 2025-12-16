@@ -3,7 +3,12 @@ function LeaderboardPage() {
     <div style={{
       height: '100%',
       overflow: 'auto',
-      background: 'linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%)',
+      background: `
+        linear-gradient(135deg, rgb(25, 21, 15) 0%, #1a1f2e 50%),
+        linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
+      `,
+      backgroundSize: '100% 100%, 50px 50px, 50px 50px',
       padding: '40px 20px',
       color: '#e0e0e0'
     }}>
