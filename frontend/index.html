@@ -4,6 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AionSpy - Recherche de Personnage</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+      }
+      #root {
+        height: 100vh;
+        overflow: hidden;
+      }
+      .modal-scrollable::-webkit-scrollbar {
+        width: 12px;
+      }
+      .modal-scrollable::-webkit-scrollbar-track {
+        background: #0f1419;
+        border-radius: 6px;
+        margin: 2px;
+      }
+      .modal-scrollable::-webkit-scrollbar-thumb {
+        background: #2d3441;
+        border-radius: 6px;
+        border: 2px solid #0f1419;
+      }
+      .modal-scrollable::-webkit-scrollbar-thumb:hover {
+        background: #3d4451;
+      }
+      .modal-scrollable {
+        scrollbar-width: thin;
+        scrollbar-color: #2d3441 #0f1419;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -21,7 +21,7 @@ KR_BASE_URL = "https://kr.ncsoft.com/aion2"
 @app.get("/api/search/{character_name}")
 def search_character_tw(character_name: str):
     headers = {"User-Agent": "Mozilla/5.0"}
-    url = f"{TW_BASE_URL}/api/search/aion2tw/search/v2/character?keyword={character_name}"
+    url = f"{TW_BASE_URL}/api/search/aion2tw/search/v2/character?keyword={character_name}&lang=en"
     print(url)
     try:
         response = requests.get(url, timeout=10, headers=headers)
@@ -52,6 +52,50 @@ def get_character_info(character_id: str, server_id: int):
 def get_character_equipment(character_id: str, server_id: int):
     headers = {"User-Agent": "Mozilla/5.0"}
     url = f"{TW_BASE_URL}/api/character/equipment?lang=en&characterId={character_id}&serverId={server_id}"
+    print(url)
+    try:
+        response = requests.get(url, timeout=10, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.Timeout:
+        return {"error": "Request timed out"}
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/equipment_item")
+def get_equipment_item(
+    id: int,
+    enchantLevel: int,
+    characterId: str,
+    serverId: int,
+    slotPos: int,
+    lang: str = "en",
+):
+    """
+    Proxy to fetch a specific equipment item detail for tooltip display.
+    """
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = (
+        f"{TW_BASE_URL}/api/character/equipment/item?"
+        f"id={id}&enchantLevel={enchantLevel}&characterId={characterId}"
+        f"&serverId={serverId}&slotPos={slotPos}&lang={lang}"
+    )
+    print(url)
+    try:
+        response = requests.get(url, timeout=10, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.Timeout:
+        return {"error": "Request timed out"}
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/item_info")
+def get_item_info(item_id: str, enchant_level: int, character_id: str, server_id: int, slot_pos):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = f"{TW_BASE_URL}/api/character/equipment/item?id={item_id}&enchantLevel={enchant_level}&characterId={character_id}&serverId={server_id}&slotPos={slot_pos}&lang=en"
     print(url)
     try:
         response = requests.get(url, timeout=10, headers=headers)
