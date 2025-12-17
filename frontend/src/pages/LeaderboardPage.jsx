@@ -36,17 +36,62 @@ function LeaderboardPage() {
     setDisplayedPlayers([])
     setAllPlayers([])
     setHasMore(true)
+    setError(null)  // Réinitialiser l'erreur lors du changement
+    setRankingData(null)  // Réinitialiser les données
     fetchRanking()
   }, [selectedServer, selectedRankingType, selectedRankingContentsType])
 
   useEffect(() => {
-    if (allPlayers.length > 0) {
+    // Pour "All Servers", charger plus de données depuis l'API au scroll
+    if ((!selectedServer || selectedServer === '') && currentPage > 1 && hasMore && !isLoadingMore) {
+      loadMorePlayers()
+    } else if (selectedServer && selectedServer !== '' && allPlayers.length > 0) {
+      // Pour un serveur spécifique, utiliser les données locales (pagination côté client)
       const endIndex = currentPage * playersPerPage
       const newPlayers = allPlayers.slice(0, endIndex)
       setDisplayedPlayers(newPlayers)
       setHasMore(endIndex < allPlayers.length)
     }
-  }, [allPlayers, currentPage])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, selectedServer])
+
+  const loadMorePlayers = async () => {
+    if (isLoadingMore || !hasMore) return
+    
+    setIsLoadingMore(true)
+    try {
+      const params = {
+        rankingContentsType: selectedRankingContentsType,
+        rankingType: selectedRankingType,
+        lang: 'en',
+        limit: playersPerPage,
+        offset: (currentPage - 1) * playersPerPage  // Pagination: page 2 = offset 20, page 3 = offset 40, etc.
+      }
+      
+      console.log(`📥 Chargement page ${currentPage}, offset: ${params.offset}`)
+      
+      const response = await axios.get('http://localhost:8000/api/ranking/list', { params })
+      const newPlayers = response.data.rankingList || []
+      
+      console.log(`✅ ${newPlayers.length} joueurs reçus pour la page ${currentPage}`)
+      
+      if (newPlayers.length > 0) {
+        // Ajouter les nouveaux joueurs à la liste affichée
+        setDisplayedPlayers(prev => [...prev, ...newPlayers])
+        setAllPlayers(prev => [...prev, ...newPlayers])
+        // S'il y a exactement 20 joueurs, il y en a probablement plus
+        setHasMore(newPlayers.length === playersPerPage)
+      } else {
+        // Aucun joueur reçu, on a atteint la fin
+        setHasMore(false)
+      }
+    } catch (err) {
+      console.error('Error loading more players:', err)
+      setHasMore(false)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   const fetchServers = async () => {
     try {
@@ -69,7 +114,7 @@ function LeaderboardPage() {
   const fetchRanking = async () => {
     const cacheKey = getCacheKey(selectedRankingContentsType, selectedRankingType, selectedServer)
     
-    // Vérifier si les données sont en cache
+    // Vérifier si les données sont en cache (cache frontend pour éviter les re-renders)
     if (cache[cacheKey]) {
       const cachedData = cache[cacheKey]
       if (!selectedServer || selectedServer === '') {
@@ -97,110 +142,95 @@ function LeaderboardPage() {
     setError(null)
     
     try {
+      // Préparer les paramètres de l'API
+      const params = {
+        rankingContentsType: selectedRankingContentsType,
+        rankingType: selectedRankingType,
+        lang: 'en',
+        limit: playersPerPage  // Récupérer seulement ce qui est nécessaire pour l'affichage initial
+      }
+      
+      // Si un serveur spécifique est sélectionné, l'ajouter aux params
+      // Sinon, on ne met pas serverId pour utiliser Redis (All Servers)
+      if (selectedServer && selectedServer !== '') {
+        params.serverId = selectedServer
+      }
+      
+      // Appel unique à l'API - Redis gère le cache automatiquement
+      const response = await axios.get('http://localhost:8000/api/ranking/list', { params })
+      const data = response.data
+      
+      // Vérifier si les données sont valides
+      if (!data || !data.rankingList) {
+        setError('Aucune donnée disponible pour ce classement')
+        setRankingData(null)
+        setDisplayedPlayers([])
+        setAllPlayers([])
+        setHasMore(false)
+        return
+      }
+      
       if (!selectedServer || selectedServer === '') {
-        // "All Servers" - faire des appels pour tous les serveurs
-        if (servers.length === 0) {
-          // Attendre que les serveurs soient chargés
+        // "All Servers" - données déjà consolidées depuis Redis
+        // Pour "All Servers", on utilise la pagination côté serveur
+        // On récupère d'abord les 20 premiers, puis on chargera plus au scroll
+        const initialPlayers = data.rankingList || []
+        
+        if (initialPlayers.length === 0) {
+          setError('Aucun joueur trouvé pour ce classement')
+          setRankingData(null)
+          setDisplayedPlayers([])
+          setAllPlayers([])
+          setHasMore(false)
           return
         }
-
-        // Faire des appels API en parallèle pour tous les serveurs
-        const promises = servers.map(server => 
-          axios.get('http://localhost:8000/api/ranking/list', {
-            params: {
-              rankingContentsType: selectedRankingContentsType,
-              rankingType: selectedRankingType,
-              serverId: server.serverId,
-              lang: 'en'
-            }
-          }).then(response => response.data)
-            .catch(err => {
-              console.error(`Error fetching ranking for server ${server.serverId}:`, err)
-              return null
-            })
-        )
-
-        const results = await Promise.all(promises)
         
-        // Combiner tous les résultats
-        const allPlayers = []
-        let seasonData = null
-        
-        results.forEach((data, index) => {
-          if (data && data.rankingList) {
-            // Prendre les données de saison du premier résultat valide
-            if (!seasonData && data.season) {
-              seasonData = data.season
-            }
-            
-            // Ajouter tous les joueurs avec leur serveur
-            data.rankingList.forEach(player => {
-              allPlayers.push({
-                ...player,
-                serverName: servers[index].serverName,
-                serverShortName: servers[index].serverShortName
-              })
-            })
-          }
-        })
-
-        // Trier par points (décroissant)
-        allPlayers.sort((a, b) => b.point - a.point)
-
-        // Réassigner les rangs
-        allPlayers.forEach((player, index) => {
-          player.rank = index + 1
-        })
-
-        // Stocker tous les joueurs dans l'état
-        setAllPlayers(allPlayers)
-        
-        // Afficher seulement les 20 premiers
-        const initialPlayers = allPlayers.slice(0, playersPerPage)
         setDisplayedPlayers(initialPlayers)
-        setHasMore(allPlayers.length > playersPerPage)
-
-        // Créer l'objet de données combiné pour le cache
-        const combinedData = {
-          season: seasonData,
-          rankingList: allPlayers
-        }
+        setAllPlayers(initialPlayers)  // On stocke seulement ce qu'on a récupéré
+        setHasMore(initialPlayers.length === playersPerPage)  // Si on a 20 joueurs, il y en a probablement plus
         
         setRankingData({
-          season: seasonData,
+          season: data.season,
           rankingList: initialPlayers
         })
         
-        // Mettre en cache les données combinées
+        // Mettre en cache frontend
         setCache(prevCache => ({
           ...prevCache,
-          [cacheKey]: combinedData
+          [cacheKey]: { ...data, rankingList: initialPlayers }
         }))
       } else {
-        // Serveur spécifique
-        const response = await axios.get('http://localhost:8000/api/ranking/list', {
-          params: {
-            rankingContentsType: selectedRankingContentsType,
-            rankingType: selectedRankingType,
-            serverId: selectedServer,
-            lang: 'en'
-          }
-        })
-        const data = response.data
+        // Serveur spécifique - appel direct à l'API externe
         setRankingData(data)
         setAllPlayers(data.rankingList || [])
         setDisplayedPlayers(data.rankingList || [])
         setHasMore(false)
         
-        // Mettre en cache les données
+        // Mettre en cache frontend
         setCache(prevCache => ({
           ...prevCache,
           [cacheKey]: data
         }))
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Error loading leaderboard')
+      // Gérer les erreurs spécifiques de Redis (données non disponibles)
+      console.error('Error fetching ranking:', err)
+      console.error('Request params:', params)
+      console.error('Response:', err.response?.data)
+      
+      if (err.response?.status === 404) {
+        setError(err.response?.data?.detail || 'Leaderboard non disponible. Le worker doit être exécuté pour initialiser les données.')
+      } else if (err.response?.status === 400) {
+        setError(err.response?.data?.detail || 'Paramètres de requête invalides')
+      } else if (err.response?.status === 503) {
+        setError(err.response?.data?.detail || 'Redis n\'est pas disponible. Veuillez démarrer Redis.')
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.detail || 'Erreur lors du chargement du classement')
+      }
       setRankingData(null)
+      setDisplayedPlayers([])
+      setAllPlayers([])
+      setHasMore(false)
     } finally {
       setLoading(false)
     }
@@ -411,13 +441,20 @@ function LeaderboardPage() {
                 const target = e.target
                 const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight
                 
-                // Charger plus de données quand on approche du bas (50px avant la fin)
-                if (scrollBottom < 50 && hasMore && !isLoadingMore && (!selectedServer || selectedServer === '')) {
-                  setIsLoadingMore(true)
-                  setTimeout(() => {
+                // Charger plus de données quand on approche du bas (100px avant la fin)
+                if (scrollBottom < 100 && hasMore && !isLoadingMore) {
+                  if (!selectedServer || selectedServer === '') {
+                    // Pour "All Servers", charger depuis l'API
+                    setCurrentPage(prev => {
+                      const nextPage = prev + 1
+                      console.log(`📜 Scroll détecté, passage à la page ${nextPage}`)
+                      return nextPage
+                    })
+                    // loadMorePlayers sera appelé via useEffect
+                  } else {
+                    // Pour un serveur spécifique, pagination locale
                     setCurrentPage(prev => prev + 1)
-                    setIsLoadingMore(false)
-                  }, 100)
+                  }
                 }
               }}
             >
