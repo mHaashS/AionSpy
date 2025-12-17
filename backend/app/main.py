@@ -110,3 +110,40 @@ async def get_item_info(item_id: str, enchant_level: int, character_id: str, ser
         return {"error": "Request timed out"}
     except httpx.HTTPError as e:
         return {"error": str(e)}
+
+
+@app.get("/api/ranking/list")
+async def get_ranking_list(
+    rankingContentsType: int = 1,
+    rankingType: int = 0,
+    serverId: int = 1001,
+    lang: str = "en"
+):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = f"{TW_BASE_URL}/api/ranking/list?lang={lang}&rankingContentsType={rankingContentsType}&rankingType={rankingType}&serverId={serverId}"
+    print(url)
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        return {"error": "Request timed out"}
+    except httpx.HTTPError as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/gameinfo/servers")
+async def get_servers(lang: str = "en"):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = f"{TW_BASE_URL}/api/gameinfo/servers?lang={lang}"
+    print(url)
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        return {"error": "Request timed out"}
+    except httpx.HTTPError as e:
+        return {"error": str(e)}
