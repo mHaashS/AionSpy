@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import ModaleCharacter from '../components/ModaleCharacter'
 
 function LeaderboardPage() {
   const [rankingData, setRankingData] = useState(null)
@@ -16,6 +17,9 @@ function LeaderboardPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const playersPerPage = 20
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalCharacterId, setModalCharacterId] = useState(null)
+  const [modalServerId, setModalServerId] = useState(null)
 
   const rankingTypes = [
     { id: 1, name: 'Abyss' },
@@ -36,14 +40,24 @@ function LeaderboardPage() {
     setDisplayedPlayers([])
     setAllPlayers([])
     setHasMore(true)
+    setIsLoadingMore(false)  // Réinitialiser le chargement
     setError(null)  // Réinitialiser l'erreur lors du changement
     setRankingData(null)  // Réinitialiser les données
     fetchRanking()
   }, [selectedServer, selectedRankingType, selectedRankingContentsType])
 
   useEffect(() => {
+    // Ignorer le premier chargement (currentPage === 1)
+    if (currentPage === 1) {
+      console.log('⏭️ useEffect: Ignoré car currentPage === 1')
+      return
+    }
+    
+    console.log(`🔍 useEffect déclenché: currentPage=${currentPage}, selectedServer=${selectedServer}, hasMore=${hasMore}, isLoadingMore=${isLoadingMore}`)
+    
     // Pour "All Servers", charger plus de données depuis l'API au scroll
-    if ((!selectedServer || selectedServer === '') && currentPage > 1 && hasMore && !isLoadingMore) {
+    if ((!selectedServer || selectedServer === '') && hasMore && !isLoadingMore) {
+      console.log(`🔄 useEffect: Chargement page ${currentPage} pour All Servers`)
       loadMorePlayers()
     } else if (selectedServer && selectedServer !== '' && allPlayers.length > 0) {
       // Pour un serveur spécifique, utiliser les données locales (pagination côté client)
@@ -51,13 +65,19 @@ function LeaderboardPage() {
       const newPlayers = allPlayers.slice(0, endIndex)
       setDisplayedPlayers(newPlayers)
       setHasMore(endIndex < allPlayers.length)
+    } else {
+      console.log(`⚠️ useEffect: Conditions non satisfaites pour charger plus`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, selectedServer])
+  }, [currentPage])
 
   const loadMorePlayers = async () => {
-    if (isLoadingMore || !hasMore) return
+    if (isLoadingMore || !hasMore) {
+      console.log(`⏸️ loadMorePlayers: Ignoré car isLoadingMore=${isLoadingMore}, hasMore=${hasMore}`)
+      return
+    }
     
+    console.log(`📥 loadMorePlayers: Début du chargement page ${currentPage}`)
     setIsLoadingMore(true)
     try {
       const params = {
@@ -77,12 +97,17 @@ function LeaderboardPage() {
       
       if (newPlayers.length > 0) {
         // Ajouter les nouveaux joueurs à la liste affichée
-        setDisplayedPlayers(prev => [...prev, ...newPlayers])
+        setDisplayedPlayers(prev => {
+          const updated = [...prev, ...newPlayers]
+          console.log(`📊 Total joueurs affichés: ${updated.length}`)
+          return updated
+        })
         setAllPlayers(prev => [...prev, ...newPlayers])
         // S'il y a exactement 20 joueurs, il y en a probablement plus
         setHasMore(newPlayers.length === playersPerPage)
       } else {
         // Aucun joueur reçu, on a atteint la fin
+        console.log('🏁 Fin des données atteinte')
         setHasMore(false)
       }
     } catch (err) {
@@ -90,6 +115,7 @@ function LeaderboardPage() {
       setHasMore(false)
     } finally {
       setIsLoadingMore(false)
+      console.log(`✅ loadMorePlayers: Fin du chargement page ${currentPage}`)
     }
   }
 
@@ -188,6 +214,7 @@ function LeaderboardPage() {
         setDisplayedPlayers(initialPlayers)
         setAllPlayers(initialPlayers)  // On stocke seulement ce qu'on a récupéré
         setHasMore(initialPlayers.length === playersPerPage)  // Si on a 20 joueurs, il y en a probablement plus
+        setCurrentPage(1)  // S'assurer que currentPage est à 1 après le chargement initial
         
         setRankingData({
           season: data.season,
@@ -245,6 +272,33 @@ function LeaderboardPage() {
     if (rank === 2) return '#c0c0c0'
     if (rank === 3) return '#cd7f32'
     return '#e0e0e0'
+  }
+
+  const getServerIdFromShortName = (serverShortName) => {
+    if (!serverShortName) return null
+    const server = servers.find(s => s.serverShortName === serverShortName)
+    return server ? server.serverId : null
+  }
+
+  const handlePlayerClick = (player) => {
+    if (!player.characterId) return
+    
+    const serverId = getServerIdFromShortName(player.serverShortName)
+    if (serverId) {
+      setModalCharacterId(player.characterId)
+      setModalServerId(serverId)
+      setIsModalOpen(true)
+    } else {
+      // Si on ne trouve pas le serveur, on peut quand même essayer avec le serverShortName
+      // ou afficher un message d'erreur
+      console.warn('Serveur non trouvé pour:', player.serverShortName)
+    }
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setModalCharacterId(null)
+    setModalServerId(null)
   }
 
   return (
@@ -447,13 +501,17 @@ function LeaderboardPage() {
                     // Pour "All Servers", charger depuis l'API
                     setCurrentPage(prev => {
                       const nextPage = prev + 1
-                      console.log(`📜 Scroll détecté, passage à la page ${nextPage}`)
+                      console.log(`📜 Scroll détecté (All Servers), passage à la page ${nextPage}, hasMore=${hasMore}, isLoadingMore=${isLoadingMore}`)
                       return nextPage
                     })
                     // loadMorePlayers sera appelé via useEffect
                   } else {
                     // Pour un serveur spécifique, pagination locale
-                    setCurrentPage(prev => prev + 1)
+                    setCurrentPage(prev => {
+                      const nextPage = prev + 1
+                      console.log(`📜 Scroll détecté (Serveur spécifique), passage à la page ${nextPage}`)
+                      return nextPage
+                    })
                   }
                 }
               }}
@@ -461,6 +519,7 @@ function LeaderboardPage() {
               {displayedPlayers.map((player, index) => (
                 <div
                   key={player.characterId || index}
+                  onClick={() => handlePlayerClick(player)}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '60px 1fr 150px 120px 180px 80px',
@@ -468,17 +527,14 @@ function LeaderboardPage() {
                     padding: '15px 20px',
                     borderBottom: '1px solid #2d3441',
                     backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'transparent',
-                    transition: 'background-color 0.2s'
+                    transition: 'background-color 0.2s',
+                    cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
-                    if (index !== 0) {
-                      e.currentTarget.style.backgroundColor = '#252b3d'
-                    }
+                    e.currentTarget.style.backgroundColor = index === 0 ? 'rgba(255, 215, 0, 0.15)' : '#252b3d'
                   }}
                   onMouseLeave={(e) => {
-                    if (index !== 0) {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }
+                    e.currentTarget.style.backgroundColor = index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'transparent'
                   }}
                 >
                   {/* Rank */}
@@ -630,6 +686,13 @@ function LeaderboardPage() {
           </div>
         )}
       </div>
+      
+      <ModaleCharacter
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        characterId={modalCharacterId}
+        serverId={modalServerId}
+      />
     </div>
   )
 }
