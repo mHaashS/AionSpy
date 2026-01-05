@@ -41,6 +41,8 @@ Le cœur de l'optimisation. Un script Python qui tourne en arrière-plan et :
 - Support natif de la pagination avec `ZREVRANGE`
 - Performance constante même avec des milliers d'entrées
 
+<img width="1698" height="835" alt="image" src="https://github.com/user-attachments/assets/375b1d6d-1b44-41fd-b1ef-33fd66898a32" />
+
 
 ### Fonctionnalités
 
@@ -152,27 +154,6 @@ J'ai implémenté un système de tooltips qui charge les détails d'un item au s
 - **React Router** : Navigation entre les pages
 - **Axios** : Client HTTP pour les appels API
 - **Vite** : Build tool ultra-rapide (remplace Create React App)
-
-## 📁 Structure du code
-AionSpy/
-├── backend/
-│   ├── app/
-│   │   ├── main.py              # API FastAPI (endpoints REST)
-│   │   ├── worker.py            # Worker de mise à jour (boucle infinie)
-│   │   └── redis_client.py      # Singleton Redis
-│   └── requirements.txt
-│
-└── frontend/
-    ├── src/
-    │   ├── App.jsx              # Router principal
-    │   ├── pages/
-    │   │   ├── HomePage.jsx     # Page d'accueil + recherche
-    │   │   ├── LeaderboardPage.jsx  # Classements
-    │   │   └── SearchPage.jsx   # (Alternative recherche)
-    │   └── components/
-    │       ├── ModaleCharacter.jsx  # Modale détails personnage
-    │       └── Navigation.jsx
-    └── package.jsont des données (CSV, JSON)
 
 ## 📝 Ce que j'ai appris
 
